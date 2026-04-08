@@ -166,7 +166,7 @@ export default function App() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-6 md:px-12 backdrop-blur-sm bg-black/10">
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="Logo" className="h-8 md:h-10 w-[150px] object-contain" referrerPolicy="no-referrer" />
+          <img src="https://clovamotion.com:459/26/aitest/logo.png" alt="Logo" className="h-8 md:h-10 w-[150px] object-contain" referrerPolicy="no-referrer" />
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
           <a href="#portfolio" className="hover:text-white transition-colors">포트폴리오</a>
@@ -214,7 +214,7 @@ export default function App() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-bold mt-4 tracking-tight"
+            className="text-[30px] font-bold mt-2 tracking-tight leading-[1.1]"
           >
             모션 디자인 포트폴리오
           </motion.h2>
