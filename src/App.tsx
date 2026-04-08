@@ -24,39 +24,58 @@ export default function App() {
   // 서버에서 영상 개수 자동 감지
   React.useEffect(() => {
     const detectVideos = async () => {
-      let count = 0;
-      let checking = true;
-      const maxCheck = 100; // 최대 100개까지 체크
+      let maxFound = 18; // 최소 기본값
+      const batchSize = 10;
+      const totalBatches = 10; // 최대 100개까지 체크
 
-      // 순차적으로 파일 존재 여부 확인
-      for (let i = 1; i <= maxCheck; i++) {
-        try {
-          const response = await fetch(`${BASE_VIDEO_URL}video${i}.mp4`, { method: 'HEAD' });
-          if (response.ok) {
-            count = i;
-          } else {
-            // 파일이 없으면 중단 (단, 네트워크 지연 고려하여 한 번 더 체크하거나 여기서 멈춤)
-            if (i > 1) break; 
-          }
-        } catch (e) {
-          // CORS 등으로 체크 불가 시 기존 로직 유지 위해 중단
-          break;
+      for (let b = 0; b < totalBatches; b++) {
+        const start = b * batchSize + 1;
+        const promises = Array.from({ length: batchSize }, (_, i) => {
+          const num = start + i;
+          return fetch(`${BASE_VIDEO_URL}video${num}.mp4`, { method: 'HEAD' })
+            .then(res => ({ num, ok: res.ok }))
+            .catch(() => ({ num, ok: false }));
+        });
+
+        const results = await Promise.all(promises);
+        const foundInBatch = results.filter(r => r.ok);
+        
+        if (foundInBatch.length > 0) {
+          maxFound = Math.max(maxFound, ...foundInBatch.map(r => r.num));
+        } else {
+          // 이번 배치에서 하나도 없으면 중단 (단, 첫 배치는 무조건 통과)
+          if (b > 0) break;
         }
       }
-      if (count > 0) setVideoCount(count);
+      setVideoCount(maxFound);
     };
 
     detectVideos();
+    // 30초마다 재확인 (새 영상 업로드 대응)
+    const interval = setInterval(detectVideos, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // 영상 데이터 생성 (이름차순 정렬: 큰 번호가 앞으로)
   const sortedVideos = useMemo(() => {
     return Array.from({ length: videoCount }, (_, i) => {
       const videoNum = videoCount - i;
+      
+      // 영상 번호에 따른 가상의 프로젝트 성격 부여
+      const projectTypes = [
+        { title: "Brand Identity Motion", desc: "브랜드의 핵심 가치를 시각적 움직임으로 전달하는 브랜드 필름" },
+        { title: "UI Interaction Design", desc: "사용자 경험을 풍부하게 만드는 인터랙티브 요소 및 마이크로 인터랙션" },
+        { title: "Cloud Infra Visualization", desc: "복잡한 클라우드 인프라와 데이터를 직관적으로 이해시키는 3D 시각화" },
+        { title: "Service Promo Film", desc: "신규 서비스의 특장점을 효과적으로 소구하는 프로모션 모션 그래픽" },
+        { title: "Event Opening Motion", desc: "컨퍼런스 및 주요 행사의 몰입감을 높이는 오프닝 시퀀스" }
+      ];
+      
+      const type = projectTypes[videoNum % projectTypes.length];
+
       return {
         id: videoNum,
-        title: `Motion Work #${videoNum}`,
-        description: `네이버 클라우드 모션 프로젝트 #${videoNum} 상세 영상`,
+        title: type.title,
+        description: type.desc,
         videoUrl: `${BASE_VIDEO_URL}video${videoNum}.mp4`,
         date: `2024-03-${String(Math.max(1, 31 - i)).padStart(2, '0')}`,
       };
@@ -77,8 +96,16 @@ export default function App() {
     let start = Math.max(1, currentPage - half);
     let end = Math.min(totalPages, start + 2);
     
-    if (end - start < 2) {
-      start = Math.max(1, end - 2);
+    // 현재 페이지가 마지막에 가까울 때 시작 페이지 조정
+    if (currentPage >= totalPages - 1) {
+      start = Math.max(1, totalPages - 2);
+      end = totalPages;
+    }
+    
+    // 현재 페이지가 시작에 가까울 때 끝 페이지 조정
+    if (currentPage <= 2) {
+      start = 1;
+      end = Math.min(totalPages, 3);
     }
     
     const pages = [];
@@ -329,7 +356,7 @@ export default function App() {
       <footer className="py-12 px-6 md:px-12 border-t border-zinc-900 bg-black">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-6 md:h-8 w-[120px] object-contain" referrerPolicy="no-referrer" />
+            <img src="/logo.png" alt="Logo" className="h-6 md:h-8 w-[120px] object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" referrerPolicy="no-referrer" />
           </div>
           
           <div className="flex gap-8 text-sm text-gray-500">
@@ -363,73 +390,85 @@ const Glass3DIcon = () => {
   return (
     <motion.div
       animate={{ 
-        rotateY: [15, -15, 15],
+        rotateY: [20, -20, 20],
         rotateX: [10, -10, 10],
       }}
       transition={{ 
-        duration: 5, 
+        duration: 8, 
         repeat: Infinity, 
         ease: "easeInOut" 
       }}
-      style={{ perspective: "1000px", transformStyle: "preserve-3d" }}
-      className="relative w-24 h-24 mb-8 flex items-center justify-center"
+      style={{ perspective: "1200px", transformStyle: "preserve-3d" }}
+      className="relative w-32 h-32 mb-8 flex items-center justify-center scale-100"
     >
-      {/* 3D Depth Layers (Simulating thickness) */}
-      {[...Array(5)].map((_, i) => (
+      {/* 3D Depth Layers (Increased thickness and transparency) */}
+      {[...Array(15)].map((_, i) => (
         <Zap 
           key={i}
-          className="absolute w-20 h-20 text-white/5"
+          className="absolute w-24 h-24"
           style={{ 
-            transform: `translateZ(${-i * 4}px)`,
-            filter: `blur(${i * 0.5}px)`,
-            strokeWidth: 1.5
+            transform: `translateZ(${-i * 5}px)`,
+            color: i === 0 
+              ? "rgba(255,255,255,0.5)" 
+              : i === 14 
+                ? "rgba(255,255,255,0.2)" 
+                : "rgba(255,255,255,0.03)",
+            fill: i === 0 
+              ? "rgba(255,255,255,0.05)" 
+              : "rgba(255,255,255,0.01)",
+            filter: i === 0 ? "none" : `blur(${i * 0.2}px)`,
+            strokeWidth: i === 0 ? 1.2 : 0.5,
+            backdropFilter: i === 0 ? "blur(4px)" : "none",
           }}
         />
       ))}
 
-      {/* Main Glass Body */}
-      <div className="relative w-20 h-20 flex items-center justify-center">
+      {/* Internal Refraction Core */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ transform: "translateZ(-35px)" }}>
         <Zap 
-          className="w-full h-full text-white/20 fill-white/10 backdrop-blur-md"
+          className="w-20 h-20 text-white/10 fill-white/5"
           style={{ 
-            filter: "drop-shadow(0 0 10px rgba(255,255,255,0.2))",
-            strokeWidth: 2
+            filter: "blur(2px) contrast(120%)",
+          }}
+        />
+      </div>
+
+      {/* Sharp Edge Highlights */}
+      <div className="relative w-24 h-24 flex items-center justify-center" style={{ transform: "translateZ(2px)" }}>
+        <Zap 
+          className="w-full h-full text-white/70 fill-transparent"
+          style={{ 
+            strokeWidth: 0.8,
+            filter: "drop-shadow(0 0 3px rgba(255,255,255,0.6))",
           }}
         />
         
-        {/* Shiny Edge Highlight */}
-        <Zap 
-          className="absolute inset-0 w-full h-full text-white/40 fill-transparent"
-          style={{ 
-            strokeWidth: 1,
-            filter: "blur(0.5px)"
-          }}
-        />
-
-        {/* Animated Glint */}
+        {/* Crystalline Glint Animation */}
         <div className="absolute inset-0 overflow-hidden [mask-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlnb24gcG9pbnRzPSIxMyAyIDMgMTQgMTIgMTQgMTEgMjIgMjEgMTAgMTIgMTAgMTMgMiIvPjwvc3ZnPg==')] [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]">
           <motion.div 
             animate={{ 
-              left: ["-100%", "200%"] 
+              top: ["-150%", "250%"],
+              left: ["-150%", "250%"]
             }}
             transition={{ 
-              duration: 2.5, 
+              duration: 4, 
               repeat: Infinity, 
-              repeatDelay: 1.5,
-              ease: "linear" 
+              repeatDelay: 1,
+              ease: "easeInOut" 
             }}
-            className="absolute top-0 bottom-0 w-full bg-gradient-to-r from-transparent via-white/60 to-transparent -skew-x-12"
+            className="absolute w-[300%] h-16 bg-gradient-to-r from-transparent via-white/80 to-transparent rotate-45"
           />
         </div>
       </div>
 
-      {/* Internal Glow */}
+      {/* Deep Shadow for Volume */}
       <Zap 
-        className="absolute w-16 h-16 text-green-500/30 blur-xl animate-pulse"
+        className="absolute w-24 h-24 text-black/40 fill-black/20 blur-md"
+        style={{ transform: "translateZ(-80px)" }}
       />
       
       {/* Bottom Reflection */}
-      <div className="absolute -bottom-6 w-16 h-3 bg-green-500/20 blur-xl rounded-full" />
+      <div className="absolute -bottom-10 w-24 h-5 bg-white/5 blur-3xl rounded-full" />
     </motion.div>
   );
 };
