@@ -356,7 +356,7 @@ export default function App() {
       <footer className="py-12 px-6 md:px-12 border-t border-zinc-900 bg-black">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="h-6 md:h-8 w-[120px] object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" referrerPolicy="no-referrer" />
+            <img src="https://clovamotion.com:459/26/aitest/logo.png" alt="Logo" className="h-6 md:h-8 w-[120px] object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" referrerPolicy="no-referrer" />
           </div>
           
           <div className="flex gap-8 text-sm text-gray-500">
