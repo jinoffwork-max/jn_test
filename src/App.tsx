@@ -374,7 +374,7 @@ export default function App() {
             <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
               <video 
                 src="https://clovamotion.com:459/26/aitest/logo_n.mp4" 
-                className="w-[180px] h-[180px] mb-8 object-contain rounded-none [mask-image:radial-gradient(circle,black_45%,transparent_95%)] mix-blend-screen opacity-90"
+                className="w-[270px] h-[270px] mb-8 object-contain rounded-none mix-blend-screen opacity-90"
                 autoPlay
                 loop
                 muted
