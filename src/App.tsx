@@ -412,9 +412,12 @@ export default function App() {
             >
               시작하기
             </a>
-            <button className="w-full md:w-auto px-8 py-4 bg-zinc-900 text-white border border-zinc-800 rounded-full font-bold text-lg hover:bg-zinc-800 transition-all">
+            <a 
+              href="mailto:dl_motiondesign@navercorp.com"
+              className="w-full md:w-auto px-8 py-4 bg-zinc-900 text-white border border-zinc-800 rounded-full font-bold text-lg hover:bg-zinc-800 transition-all flex items-center justify-center"
+            >
               문의하기
-            </button>
+            </a>
           </div>
         </motion.div>
       </section>
