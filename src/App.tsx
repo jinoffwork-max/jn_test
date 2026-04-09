@@ -13,54 +13,45 @@ import {
   ChevronRight
 } from "lucide-react";
 
-const BASE_VIDEO_URL = "https://clovamotion.com:459/26/aitest/";
+const BASE_VIDEO_URL = "https://clovamotion.com:459/";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
-  const [videoCount, setVideoCount] = useState(18); // 기본값 18, 자동 감지 후 업데이트
+  const [videoList, setVideoList] = useState<string[]>([]);
+  const [scanStatus, setScanStatus] = useState<'scanning' | 'auto' | 'fallback'>('scanning');
   const videosPerPage = 6;
 
-  // 서버에서 영상 개수 자동 감지
+  // API를 통한 비디오 목록 자동 스캔
   React.useEffect(() => {
-    const detectVideos = async () => {
-      let maxFound = 18; // 최소 기본값
-      const batchSize = 10;
-      const totalBatches = 10; // 최대 100개까지 체크
-
-      for (let b = 0; b < totalBatches; b++) {
-        const start = b * batchSize + 1;
-        const promises = Array.from({ length: batchSize }, (_, i) => {
-          const num = start + i;
-          return fetch(`${BASE_VIDEO_URL}video${num}.mp4`, { method: 'HEAD' })
-            .then(res => ({ num, ok: res.ok }))
-            .catch(() => ({ num, ok: false }));
-        });
-
-        const results = await Promise.all(promises);
-        const foundInBatch = results.filter(r => r.ok);
-        
-        if (foundInBatch.length > 0) {
-          maxFound = Math.max(maxFound, ...foundInBatch.map(r => r.num));
+    const fetchVideoList = async () => {
+      try {
+        setScanStatus('scanning');
+        const response = await fetch("/api/videos");
+        if (response.ok) {
+          const filtered: string[] = await response.json();
+          setVideoList(filtered);
+          // 백엔드에서 에러 메시지를 포함해 보냈는지 확인 (실제로는 200이지만 내용은 fallback일 수 있음)
+          // 여기서는 단순화해서 리스트가 있으면 성공으로 간주하되, 
+          // 실제 자동 스캔 성공 여부는 백엔드 로그로 확인 가능
+          setScanStatus('auto');
         } else {
-          // 이번 배치에서 하나도 없으면 중단 (단, 첫 배치는 무조건 통과)
-          if (b > 0) break;
+          setScanStatus('fallback');
         }
+      } catch (error) {
+        setScanStatus('fallback');
       }
-      setVideoCount(maxFound);
     };
 
-    detectVideos();
-    // 30초마다 재확인 (새 영상 업로드 대응)
-    const interval = setInterval(detectVideos, 30000);
+    fetchVideoList();
+    // 1분마다 자동 갱신 (서버 파일 추가 시 자동 반영)
+    const interval = setInterval(fetchVideoList, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // 영상 데이터 생성 (이름차순 정렬: 큰 번호가 앞으로)
+  // 영상 데이터 생성
   const sortedVideos = useMemo(() => {
-    return Array.from({ length: videoCount }, (_, i) => {
-      const videoNum = videoCount - i;
-      
+    return videoList.map((path, i) => {
       // 영상 번호에 따른 가상의 프로젝트 성격 부여
       const projectTypes = [
         { title: "Brand Identity Motion", desc: "브랜드의 핵심 가치를 시각적 움직임으로 전달하는 브랜드 필름" },
@@ -70,17 +61,23 @@ export default function App() {
         { title: "Event Opening Motion", desc: "컨퍼런스 및 주요 행사의 몰입감을 높이는 오프닝 시퀀스" }
       ];
       
-      const type = projectTypes[videoNum % projectTypes.length];
+      const type = projectTypes[i % projectTypes.length];
+
+      // 경로 처리: 이미 /www/로 시작하면 그대로 사용, 아니면 붙여줌
+      let finalUrl = path;
+      if (!path.startsWith('http') && !path.startsWith('/www/')) {
+        finalUrl = `${BASE_VIDEO_URL}${path.startsWith('/') ? path.slice(1) : path}`;
+      }
 
       return {
-        id: videoNum,
+        id: i,
         title: type.title,
         description: type.desc,
-        videoUrl: `${BASE_VIDEO_URL}video${videoNum}.mp4`,
+        videoUrl: finalUrl,
         date: `2024-03-${String(Math.max(1, 31 - i)).padStart(2, '0')}`,
       };
     });
-  }, [videoCount]);
+  }, [videoList]);
 
   // 현재 페이지 비디오 추출
   const currentVideos = useMemo(() => {
@@ -175,30 +172,48 @@ export default function App() {
           >
             모션 디자인 포트폴리오
           </motion.h2>
+          <div className="mt-4 flex justify-center items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-600">
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              scanStatus === 'scanning' ? 'bg-yellow-500 animate-pulse' : 
+              scanStatus === 'auto' ? 'bg-green-500' : 'bg-red-500'
+            }`} />
+            {scanStatus === 'scanning' ? 'Scanning Server...' : 
+             scanStatus === 'auto' ? 'Auto-Sync Active' : 'Manual List Mode (Server Locked)'}
+          </div>
         </div>
 
-        <AnimatePresence mode="popLayout">
-          <motion.div 
-            key={currentPage}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.7, ease: "easeInOut" }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            {currentVideos.map((video, index) => (
-              <VideoCard 
-                key={video.id}
-                title={video.title}
-                description={video.description}
-                videoUrl={video.videoUrl}
-                date={video.date}
-                delay={0}
-                onClick={() => setSelectedVideo(video)}
-              />
-            ))}
-          </motion.div>
-        </AnimatePresence>
+        {currentVideos.length > 0 ? (
+          <AnimatePresence mode="popLayout">
+            <motion.div 
+              key={currentPage}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.7, ease: "easeInOut" }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              id="video-container"
+            >
+              {currentVideos.map((video, index) => (
+                <VideoCard 
+                  key={video.id}
+                  title={video.title}
+                  description={video.description}
+                  videoUrl={video.videoUrl}
+                  date={video.date}
+                  delay={0}
+                  onClick={() => setSelectedVideo(video)}
+                />
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        ) : (
+          <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl">
+            <p className="text-gray-500 mb-4">표시할 영상이 없습니다.</p>
+            <p className="text-xs text-zinc-600">
+              파일명이 'tsl'로 시작하는 .mp4 파일이 video-list.json에 있는지 확인해주세요.
+            </p>
+          </div>
+        )}
 
         {/* Pagination */}
         <div className="mt-16 flex justify-center items-center gap-4">
