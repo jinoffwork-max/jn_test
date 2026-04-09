@@ -20,31 +20,64 @@ export default function App() {
   const [selectedVideo, setSelectedVideo] = useState<any>(null);
   const [videoList, setVideoList] = useState<string[]>([]);
   const [scanStatus, setScanStatus] = useState<'scanning' | 'auto' | 'fallback'>('scanning');
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const videosPerPage = 6;
 
-  // API를 통한 비디오 목록 자동 스캔
+  // 비디오 서버 정보
+  const VIDEO_SERVER_URL = "https://clovamotion.com:459/";
+  const SCANNER_URL = `${VIDEO_SERVER_URL}tsl_scanner.php?key=tsl_secure_sync_2024`;
+
+  // 비디오 목록 자동 스캔 (직접 통신 방식 - GitHub Pages 대응)
   React.useEffect(() => {
     const fetchVideoList = async () => {
       try {
         setScanStatus('scanning');
-        const response = await fetch("/api/videos");
+        setErrorDetail(null);
+        console.log("Fetching video list directly from scanner...");
+        
+        const response = await fetch(SCANNER_URL);
         if (response.ok) {
-          const filtered: string[] = await response.json();
-          setVideoList(filtered);
-          // 백엔드에서 에러 메시지를 포함해 보냈는지 확인 (실제로는 200이지만 내용은 fallback일 수 있음)
-          // 여기서는 단순화해서 리스트가 있으면 성공으로 간주하되, 
-          // 실제 자동 스캔 성공 여부는 백엔드 로그로 확인 가능
-          setScanStatus('auto');
-        } else {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            const sorted = data
+              .sort((a: any, b: any) => (b.mtime || 0) - (a.mtime || 0))
+              .map((v: any) => typeof v === 'string' ? v : v.path);
+            
+            setVideoList(sorted);
+            setScanStatus('auto');
+            return;
+          }
+        }
+        throw new Error(`Server returned ${response.status}`);
+      } catch (error: any) {
+        console.warn("Direct scan failed:", error);
+        setErrorDetail(error.message || "Connection failed");
+        
+        // 로컬 video-list.json 시도 (GitHub Pages의 서브 디렉토리 구조 대응)
+        try {
+          const fallbackResponse = await fetch("video-list.json");
+          if (fallbackResponse.ok) {
+            const list = await fallbackResponse.json();
+            setVideoList(list);
+            setScanStatus('fallback');
+          } else {
+            // 한번 더 시도 (절대 경로)
+            const fallbackResponse2 = await fetch("./video-list.json");
+            if (fallbackResponse2.ok) {
+              const list = await fallbackResponse2.json();
+              setVideoList(list);
+              setScanStatus('fallback');
+            } else {
+              setScanStatus('fallback');
+            }
+          }
+        } catch (e) {
           setScanStatus('fallback');
         }
-      } catch (error) {
-        setScanStatus('fallback');
       }
     };
 
     fetchVideoList();
-    // 1분마다 자동 갱신 (서버 파일 추가 시 자동 반영)
     const interval = setInterval(fetchVideoList, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -172,13 +205,19 @@ export default function App() {
           >
             모션 디자인 포트폴리오
           </motion.h2>
-          <div className="mt-4 flex justify-center items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-600">
+          <div className="mt-4 flex justify-center items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-600 group relative">
             <div className={`w-1.5 h-1.5 rounded-full ${
               scanStatus === 'scanning' ? 'bg-yellow-500 animate-pulse' : 
               scanStatus === 'auto' ? 'bg-green-500' : 'bg-red-500'
             }`} />
             {scanStatus === 'scanning' ? 'Scanning Server...' : 
              scanStatus === 'auto' ? 'Auto-Sync Active' : 'Manual List Mode (Server Locked)'}
+            
+            {errorDetail && (
+              <div className="absolute top-full mt-2 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded text-[8px] text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                Error: {errorDetail}
+              </div>
+            )}
           </div>
         </div>
 
@@ -208,10 +247,7 @@ export default function App() {
           </AnimatePresence>
         ) : (
           <div className="py-20 text-center border border-dashed border-zinc-800 rounded-2xl">
-            <p className="text-gray-500 mb-4">표시할 영상이 없습니다.</p>
-            <p className="text-xs text-zinc-600">
-              파일명이 'tsl'로 시작하는 .mp4 파일이 video-list.json에 있는지 확인해주세요.
-            </p>
+            <p className="text-gray-500">표시할 영상이 없습니다.</p>
           </div>
         )}
 
@@ -295,7 +331,7 @@ export default function App() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl font-bold tracking-tight mb-6">
+            <h2 className="text-[30px] font-bold tracking-tight mb-6">
               클라우드 경험의 생동감을 설계합니다
             </h2>
             <p className="text-gray-400 text-lg leading-relaxed mb-8">
@@ -336,9 +372,14 @@ export default function App() {
               <div className="w-48 h-48 bg-green-500/20 blur-[100px] group-hover:bg-green-500/40 transition-colors" />
             </div>
             <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
-              <Glass3DIcon />
-              <h3 className="text-2xl font-bold mb-4">비주얼 스토리텔링</h3>
-              <p className="text-gray-500">기술의 복잡함을 걷어내고, 움직임을 통해 서비스의 핵심 가치를 명확하게 전달합니다.</p>
+              <img 
+                src="https://clovamotion.com:459/26/aitest/logo_n.jpg" 
+                alt="Visual Storytelling" 
+                className="w-[180px] h-[180px] mb-8 object-contain rounded-none [mask-image:radial-gradient(circle,black_45%,transparent_95%)] mix-blend-screen opacity-90"
+                referrerPolicy="no-referrer"
+              />
+              <h3 className="text-[24px] font-bold mb-4">비주얼 스토리텔링</h3>
+              <p className="text-gray-500 w-[330px]">기술의 복잡함을 걷어내고, 움직임을 통해 서비스의 핵심 가치를 명확하게 전달합니다.</p>
             </div>
           </motion.div>
         </div>
@@ -353,7 +394,7 @@ export default function App() {
           viewport={{ once: true }}
           className="relative z-10"
         >
-          <h2 className="text-[55px] font-bold tracking-tighter mb-8 font-[Arial]">
+          <h2 className="text-[40px] font-bold tracking-tighter mb-8 font-[Arial]">
             서비스의 움직임을 설계합니다
           </h2>
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
@@ -400,93 +441,6 @@ export default function App() {
     </div>
   );
 }
-
-const Glass3DIcon = () => {
-  return (
-    <motion.div
-      animate={{ 
-        rotateY: [20, -20, 20],
-        rotateX: [10, -10, 10],
-      }}
-      transition={{ 
-        duration: 8, 
-        repeat: Infinity, 
-        ease: "easeInOut" 
-      }}
-      style={{ perspective: "1200px", transformStyle: "preserve-3d" }}
-      className="relative w-32 h-32 mb-8 flex items-center justify-center scale-100"
-    >
-      {/* 3D Depth Layers (Increased thickness and transparency) */}
-      {[...Array(15)].map((_, i) => (
-        <Zap 
-          key={i}
-          className="absolute w-24 h-24"
-          style={{ 
-            transform: `translateZ(${-i * 5}px)`,
-            color: i === 0 
-              ? "rgba(255,255,255,0.5)" 
-              : i === 14 
-                ? "rgba(255,255,255,0.2)" 
-                : "rgba(255,255,255,0.03)",
-            fill: i === 0 
-              ? "rgba(255,255,255,0.05)" 
-              : "rgba(255,255,255,0.01)",
-            filter: i === 0 ? "none" : `blur(${i * 0.2}px)`,
-            strokeWidth: i === 0 ? 1.2 : 0.5,
-            backdropFilter: i === 0 ? "blur(4px)" : "none",
-          }}
-        />
-      ))}
-
-      {/* Internal Refraction Core */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ transform: "translateZ(-35px)" }}>
-        <Zap 
-          className="w-20 h-20 text-white/10 fill-white/5"
-          style={{ 
-            filter: "blur(2px) contrast(120%)",
-          }}
-        />
-      </div>
-
-      {/* Sharp Edge Highlights */}
-      <div className="relative w-24 h-24 flex items-center justify-center" style={{ transform: "translateZ(2px)" }}>
-        <Zap 
-          className="w-full h-full text-white/70 fill-transparent"
-          style={{ 
-            strokeWidth: 0.8,
-            filter: "drop-shadow(0 0 3px rgba(255,255,255,0.6))",
-          }}
-        />
-        
-        {/* Crystalline Glint Animation */}
-        <div className="absolute inset-0 overflow-hidden [mask-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBvbHlnb24gcG9pbnRzPSIxMyAyIDMgMTQgMTIgMTQgMTEgMjIgMjEgMTAgMTIgMTAgMTMgMiIvPjwvc3ZnPg==')] [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]">
-          <motion.div 
-            animate={{ 
-              top: ["-150%", "250%"],
-              left: ["-150%", "250%"]
-            }}
-            transition={{ 
-              duration: 4, 
-              repeat: Infinity, 
-              repeatDelay: 1,
-              ease: "easeInOut" 
-            }}
-            className="absolute w-[300%] h-16 bg-gradient-to-r from-transparent via-white/80 to-transparent rotate-45"
-          />
-        </div>
-      </div>
-
-      {/* Deep Shadow for Volume */}
-      <Zap 
-        className="absolute w-24 h-24 text-black/40 fill-black/20 blur-md"
-        style={{ transform: "translateZ(-80px)" }}
-      />
-      
-      {/* Bottom Reflection */}
-      <div className="absolute -bottom-10 w-24 h-5 bg-white/5 blur-3xl rounded-full" />
-    </motion.div>
-  );
-};
 
 interface VideoCardProps {
   title: string;
