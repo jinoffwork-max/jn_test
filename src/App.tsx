@@ -372,11 +372,13 @@ export default function App() {
               <div className="w-48 h-48 bg-green-500/20 blur-[100px] group-hover:bg-green-500/40 transition-colors" />
             </div>
             <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
-              <img 
-                src="https://clovamotion.com:459/26/aitest/logo_n.jpg" 
-                alt="Visual Storytelling" 
+              <video 
+                src="https://clovamotion.com:459/26/aitest/logo_n.mp4" 
                 className="w-[180px] h-[180px] mb-8 object-contain rounded-none [mask-image:radial-gradient(circle,black_45%,transparent_95%)] mix-blend-screen opacity-90"
-                referrerPolicy="no-referrer"
+                autoPlay
+                loop
+                muted
+                playsInline
               />
               <h3 className="text-[24px] font-bold mb-4">비주얼 스토리텔링</h3>
               <p className="text-gray-500 w-[330px]">기술의 복잡함을 걷어내고, 움직임을 통해 서비스의 핵심 가치를 명확하게 전달합니다.</p>
