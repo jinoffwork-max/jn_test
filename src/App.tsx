@@ -150,14 +150,19 @@ export default function App() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-6 md:px-12 backdrop-blur-sm bg-black/10">
         <div className="flex items-center gap-2">
-          <img src="https://clovamotion.com:459/26/aitest/logo.png" alt="Logo" className="h-8 md:h-10 w-[150px] object-contain" referrerPolicy="no-referrer" />
+          <a href="https://navercloudcorp.com/?n_media=27758&n_query=%EB%84%A4%EC%9D%B4%EB%B2%84%ED%81%B4%EB%9D%BC%EC%9A%B0%EB%93%9C&n_rank=1&n_ad_group=grp-a001-04-000000041384409&n_ad=nad-a001-04-000000462767328&n_keyword_id=nkw-a001-04-000006130484581&n_keyword=%EB%84%A4%EC%9D%B4%EB%B2%84%ED%81%B4%EB%9D%BC%EC%9A%B0%EB%93%9C&n_campaign_type=4&n_contract=tct-a001-04-000000001265845&n_ad_group_type=5&NaPm=ct%3Dmnr65etm%7Cci%3DER981e4b02-33e7-11f1-b092-3a205385ca93%7Ctr%3Dbrnd%7Chk%3Dd9577f5795168008a518146cfb4dbbc7af9ec642%7Cnacn%3DeVcBDoBwWnsfB" target="_blank" rel="noopener noreferrer" className="block">
+            <img src="https://clovamotion.com:459/26/aitest/logo.png" alt="Logo" className="h-8 md:h-10 w-[150px] object-contain" referrerPolicy="no-referrer" />
+          </a>
         </div>
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
           <a href="#portfolio" className="hover:text-white transition-colors">포트폴리오</a>
           <a href="#about" className="hover:text-white transition-colors">소개</a>
-          <button className="px-5 py-2 bg-white text-black rounded-full hover:bg-gray-200 transition-colors">
+          <a 
+            href="mailto:dl_motiondesign@navercorp.com"
+            className="px-5 py-2 bg-white text-black rounded-full hover:bg-gray-200 transition-colors"
+          >
             연락하기
-          </button>
+          </a>
         </div>
       </nav>
 
@@ -238,7 +243,6 @@ export default function App() {
                   title={video.title}
                   description={video.description}
                   videoUrl={video.videoUrl}
-                  date={video.date}
                   delay={0}
                   onClick={() => setSelectedVideo(video)}
                 />
@@ -400,9 +404,14 @@ export default function App() {
             서비스의 움직임을 설계합니다
           </h2>
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-            <button className="w-full md:w-auto px-8 py-4 bg-white text-black rounded-full font-bold text-lg hover:bg-gray-200 transition-all hover:scale-105">
+            <a 
+              href="https://blog.naver.com/navercloud_design" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="w-full md:w-auto px-8 py-4 bg-white text-black rounded-full font-bold text-lg hover:bg-gray-200 transition-all hover:scale-105 flex items-center justify-center"
+            >
               시작하기
-            </button>
+            </a>
             <button className="w-full md:w-auto px-8 py-4 bg-zinc-900 text-white border border-zinc-800 rounded-full font-bold text-lg hover:bg-zinc-800 transition-all">
               문의하기
             </button>
@@ -414,7 +423,9 @@ export default function App() {
       <footer className="py-12 px-6 md:px-12 border-t border-zinc-900 bg-black">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-2">
-            <img src="https://clovamotion.com:459/26/aitest/logo.png" alt="Logo" className="h-6 md:h-8 w-[120px] object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" referrerPolicy="no-referrer" />
+            <a href="https://navercloudcorp.com/?n_media=27758&n_query=%EB%84%A4%EC%9D%B4%EB%B2%84%ED%81%B4%EB%9D%BC%EC%9A%B0%EB%93%9C&n_rank=1&n_ad_group=grp-a001-04-000000041384409&n_ad=nad-a001-04-000000462767328&n_keyword_id=nkw-a001-04-000006130484581&n_keyword=%EB%84%A4%EC%9D%B4%EB%B2%84%ED%81%B4%EB%9D%BC%EC%9A%B0%EB%93%9C&n_campaign_type=4&n_contract=tct-a001-04-000000001265845&n_ad_group_type=5&NaPm=ct%3Dmnr65etm%7Cci%3DER981e4b02-33e7-11f1-b092-3a205385ca93%7Ctr%3Dbrnd%7Chk%3Dd9577f5795168008a518146cfb4dbbc7af9ec642%7Cnacn%3DeVcBDoBwWnsfB" target="_blank" rel="noopener noreferrer" className="block">
+              <img src="https://clovamotion.com:459/26/aitest/logo.png" alt="Logo" className="h-6 md:h-8 w-[120px] object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all" referrerPolicy="no-referrer" />
+            </a>
           </div>
           
           <div className="flex gap-8 text-sm text-gray-500">
@@ -448,12 +459,11 @@ interface VideoCardProps {
   title: string;
   description: string;
   videoUrl: string;
-  date: string;
   delay: number;
   onClick: () => void;
 }
 
-const VideoCard: React.FC<VideoCardProps> = ({ title, description, videoUrl, date, onClick }) => {
+const VideoCard: React.FC<VideoCardProps> = ({ title, description, videoUrl, onClick }) => {
   return (
     <div 
       onClick={onClick}
@@ -480,7 +490,6 @@ const VideoCard: React.FC<VideoCardProps> = ({ title, description, videoUrl, dat
       <div className="p-6">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-bold group-hover:text-green-400 transition-colors">{title}</h3>
-          <span className="text-[10px] text-zinc-600 font-mono mt-1">{date}</span>
         </div>
         <p className="text-gray-500 text-sm leading-relaxed">
           {description}
